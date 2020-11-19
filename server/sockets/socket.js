@@ -23,17 +23,31 @@ io.on('connection', (client) => {
         // mensaje que se emite a los usuarios de la misma sala
         client.to(data.sala).emit('listaPersonasConectadas', usuarios.getPersonasPorSala(data.sala));
 
+        // avisa cuando se conecta un usuario
+        client.to(data.sala).emit('enviarMensaje', crearMensaje('Administrador', `*${data.nombre} se ha conectado*`));
+
         callback(usuarios.getPersonasPorSala(data.sala)); // es como un return
 
     });
 
-    client.on('enviarMensaje', (data) => {
+    client.on('enviarMensaje', (data, callback) => {
 
         // por si no viene el nombre en la data......
         let persona = usuarios.getPersona(client.id);
+        let mensajeRecibido; // movida que me he inventado porq no va como está en los vídeos
 
-        let mensaje = crearMensaje(persona.nombre, persona.mensaje);
+        if (persona.mensaje) {
+            mensajeRecibido = persona.mensaje;
+        } else {
+            mensajeRecibido = data.mensaje;
+        }
+
+
+        let mensaje = crearMensaje(persona.nombre, mensajeRecibido);
         client.to(persona.sala).emit('enviarMensaje', mensaje);
+
+        callback(mensaje);
+
     });
 
 
@@ -42,7 +56,7 @@ io.on('connection', (client) => {
 
         // mensaje que se emite a todos los usuarios cuando alguien se desconecta del servidor
         // crearMensaje('Administrador', `${personaBorrada.nombre} se desconectó del chat`);
-        client.to(personaBorrada.sala).emit('enviarMensaje', crearMensaje(`${personaBorrada.nombre} se desconectó del chat`));
+        client.to(personaBorrada.sala).emit('enviarMensaje', crearMensaje('Administrador', `*${personaBorrada.nombre} se desconectó*`));
         client.to(personaBorrada.sala).emit('listaPersonasConectadas', usuarios.getPersonasPorSala(personaBorrada.sala));
     });
 
